@@ -18,22 +18,21 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type Coordinates struct {
-	Lat  float64 `json:"lat"`
-	Long float64 `json:"long"`
+type Location struct {
+	Type        string     `json:"type"`
+	Coordinates [2]float64 `json:"coordinates"`
 }
 
 // Location struct for MongoDB
-type Location struct {
-	PlaceID      string       `json:"place_id"`
-	Address      string       `json:"address"`
-	Coord        *Coordinates `json:"coordinates"`
-	Suggesters   []any        `json:"suggesters"`
-	Reviewers    []any        `json:"reviewers"`
-	IsMerged     bool         `json:"is_merged"`
-	IsSuggested  bool         `json:"is_suggested"`
-	IsReviewed   bool         `json:"is_reviewed"`
-	CorrectCount int          `json:"correct_count"`
+type Place struct {
+	PlaceID     string    `json:"place_id"`
+	Address     string    `json:"address"`
+	Location    *Location `json:"location"`
+	Suggestions []any     `json:"suggestions"`
+	Reviewers   []any     `json:"reviewers"`
+	IsMerged    bool      `json:"is_merged"`
+	IsSuggested bool      `json:"is_suggested"`
+	IsReviewed  bool      `json:"is_reviewed"`
 }
 
 // File to store the last processed PlaceID
@@ -109,21 +108,21 @@ func processCSV(csvFile string, mongoURI string, dbName string, collectionName s
 			continue
 		}
 
-		location := Location{
+		place := Place{
 			PlaceID: record[0],
 			Address: record[2],
-			Coord: &Coordinates{
-				Lat:  parseFloat(record[9]),
-				Long: parseFloat(record[10]),
+			Location: &Location{
+				Type:        "Point",
+				Coordinates: [2]float64{parseFloat(record[10]), parseFloat(record[9])},
 			},
 			IsMerged:    false,
 			IsSuggested: false,
 			IsReviewed:  false,
-			Suggesters:  nil,
+			Suggestions: nil,
 			Reviewers:   nil,
 		}
 
-		batch = append(batch, location)
+		batch = append(batch, place)
 
 		if len(batch) >= batchSize {
 			_, err := collection.InsertMany(context.Background(), batch)
@@ -133,7 +132,7 @@ func processCSV(csvFile string, mongoURI string, dbName string, collectionName s
 			batch = batch[:0] // Clear the batch
 
 			// Update progress after successful batch insert
-			updateLastProcessedPlaceID(location.PlaceID)
+			updateLastProcessedPlaceID(place.PlaceID)
 		}
 
 		// Update progress
@@ -147,7 +146,7 @@ func processCSV(csvFile string, mongoURI string, dbName string, collectionName s
 			return err
 		}
 		// Update progress after successful batch insert
-		updateLastProcessedPlaceID(batch[len(batch)-1].(Location).PlaceID)
+		updateLastProcessedPlaceID(batch[len(batch)-1].(Place).PlaceID)
 	}
 
 	progressBar.Finish()
