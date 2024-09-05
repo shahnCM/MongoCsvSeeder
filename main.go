@@ -28,8 +28,8 @@ type Place struct {
 	PlaceID     string    `json:"place_id"`
 	Address     string    `json:"address"`
 	Location    *Location `json:"location"`
-	Suggestions []any     `json:"suggestions"`
-	Reviewers   []any     `json:"reviewers"`
+	Suggestions [0]any    `json:"suggestions"`
+	Reviewers   [0]any    `json:"reviewers"`
 	IsMerged    bool      `json:"is_merged"`
 	IsSuggested bool      `json:"is_suggested"`
 	IsReviewed  bool      `json:"is_reviewed"`
@@ -118,8 +118,8 @@ func processCSV(csvFile string, mongoURI string, dbName string, collectionName s
 			IsMerged:    false,
 			IsSuggested: false,
 			IsReviewed:  false,
-			Suggestions: nil,
-			Reviewers:   nil,
+			Suggestions: [0]any{},
+			Reviewers:   [0]any{},
 		}
 
 		batch = append(batch, place)
