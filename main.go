@@ -25,11 +25,15 @@ type Coordinates struct {
 
 // Location struct for MongoDB
 type Location struct {
-	PlaceID    string       `json:"placeId"`
-	Address    string       `json:"address"`
-	Coord      *Coordinates `json:"coordinates"`
-	Suggesters []any        `json:"suggesters"`
-	IsMerged   bool         `json:"isMerged"`
+	PlaceID      string       `json:"place_id"`
+	Address      string       `json:"address"`
+	Coord        *Coordinates `json:"coordinates"`
+	Suggesters   []any        `json:"suggesters"`
+	Reviewers    []any        `json:"reviewers"`
+	IsMerged     bool         `json:"is_merged"`
+	IsSuggested  bool         `json:"is_suggested"`
+	IsReviewed   bool         `json:"is_reviewed"`
+	CorrectCount int          `json:"correct_count"`
 }
 
 // File to store the last processed PlaceID
@@ -112,7 +116,11 @@ func processCSV(csvFile string, mongoURI string, dbName string, collectionName s
 				Lat:  parseFloat(record[9]),
 				Long: parseFloat(record[10]),
 			},
-			IsMerged: false,
+			IsMerged:    false,
+			IsSuggested: false,
+			IsReviewed:  false,
+			Suggesters:  nil,
+			Reviewers:   nil,
 		}
 
 		batch = append(batch, location)
