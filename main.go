@@ -25,18 +25,41 @@ type Location struct {
 
 // Location struct for MongoDB
 type Place struct {
-	PlaceID     string    `json:"place_id"`
-	Address     string    `json:"address"`
-	Location    *Location `json:"location"`
-	Suggestions [0]any    `json:"suggestions"`
-	Reviewers   [0]any    `json:"reviewers"`
-	IsMerged    bool      `json:"is_merged"`
-	IsSuggested bool      `json:"is_suggested"`
-	IsReviewed  bool      `json:"is_reviewed"`
+	PlaceID                string     `json:"placeId"`
+	Address                string     `json:"address"`
+	Version                string     `json:"version"`
+	IsAutoCompleteAddresss string     `json:"isAutoCompleteAddresss"`
+	Types                  []string   `json:"types"`
+	PlusCode               string     `json:"plusCode"`
+	City                   string     `json:"city"`
+	Division               string     `json:"division"`
+	Distric                string     `json:"district"`
+	PostalCode             string     `json:"postalCode"`
+	Sublocality            string     `json:"sublocality"`
+	LocalArea              string     `json:"localArea"`
+	Location               *Location  `json:"location"`
+	Suggestions            [0]any     `json:"suggestions"`
+	Reviewers              [0]any     `json:"reviewers"`
+	MergedAt               *time.Time `json:"mergedAt"`
 }
 
 // File to store the last processed PlaceID
 var progressFile = "_progress.txt"
+
+func parseArrayFromColumn(csv string) []string {
+	// Remove the square brackets and spaces
+	cleaned := strings.Trim(csv, "[]")
+
+	// Split the string by commas
+	items := strings.Split(cleaned, ",")
+
+	// Trim any surrounding whitespace or quotes from each element
+	for i, item := range items {
+		items[i] = strings.TrimSpace(strings.Trim(item, "'"))
+	}
+
+	return items
+}
 
 // CSV processing and MongoDB insertion
 func processCSV(csvFile string, mongoURI string, dbName string, collectionName string) error {
@@ -78,6 +101,14 @@ func processCSV(csvFile string, mongoURI string, dbName string, collectionName s
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
+	// Read the header
+	header, err := reader.Read()
+	if err != nil {
+		fmt.Println("Error reading header:", err)
+		return err
+	}
+	fmt.Println("Header:", header)
+
 	for {
 		record, err := reader.Read()
 		if err != nil {
@@ -103,21 +134,29 @@ func processCSV(csvFile string, mongoURI string, dbName string, collectionName s
 		}
 
 		// Skip non-Bangladesh locations
-		if record[4] != "Bangladesh" {
-			progressBar.Increment()
-			continue
-		}
+		// if record[4] != "Bangladesh" {
+		// 	progressBar.Increment()
+		// 	continue
+		// }
 
 		place := Place{
-			PlaceID: record[0],
-			Address: record[2],
+			PlaceID:                record[0],
+			Address:                record[2],
+			Version:                record[12],
+			IsAutoCompleteAddresss: strings.ToLower(record[3]),
+			Types:                  parseArrayFromColumn(record[1]),
+			PlusCode:               record[8],
+			City:                   record[5],
+			Division:               record[6],
+			Distric:                record[7],
+			PostalCode:             record[11],
+			Sublocality:            record[13],
+			LocalArea:              record[14],
 			Location: &Location{
 				Type:        "Point",
 				Coordinates: [2]float64{parseFloat(record[10]), parseFloat(record[9])},
 			},
-			IsMerged:    false,
-			IsSuggested: false,
-			IsReviewed:  false,
+
 			Suggestions: [0]any{},
 			Reviewers:   [0]any{},
 		}
