@@ -23,24 +23,24 @@ type Location struct {
 	Coordinates [2]float64 `json:"coordinates"`
 }
 
-// Location struct for MongoDB
 type Place struct {
-	PlaceID                string     `json:"placeId"`
-	Address                string     `json:"address"`
-	Version                string     `json:"version"`
-	IsAutoCompleteAddresss string     `json:"isAutoCompleteAddresss"`
-	Types                  []string   `json:"types"`
-	PlusCode               string     `json:"plusCode"`
-	City                   string     `json:"city"`
-	Division               string     `json:"division"`
-	Distric                string     `json:"district"`
-	PostalCode             string     `json:"postalCode"`
-	Sublocality            string     `json:"sublocality"`
-	LocalArea              string     `json:"localArea"`
-	Location               *Location  `json:"location"`
-	Suggestions            [0]any     `json:"suggestions"`
-	Reviewers              [0]any     `json:"reviewers"`
-	MergedAt               *time.Time `json:"mergedAt"`
+	PlaceID               string     `json:"placeId" bson:"placeId"`
+	Address               string     `json:"address" bson:"address"`
+	Version               string     `json:"version" bson:"version"`
+	IsAutoCompleteAddress bool       `json:"isAutoCompleteAddress" bson:"isAutoCompleteAddress"`
+	Types                 []string   `json:"types" bson:"types"`
+	PlusCode              string     `json:"plusCode" bson:"plusCode"`
+	City                  string     `json:"city" bson:"city"`
+	Division              string     `json:"division" bson:"division"`
+	District              string     `json:"district" bson:"district"`
+	PostalCode            string     `json:"postalCode" bson:"postalCode"`
+	Sublocality           string     `json:"sublocality" bson:"sublocality"`
+	LocalArea             string     `json:"localArea" bson:"localArea"`
+	Location              *Location  `json:"location" bson:"location"`
+	Suggestions           []any      `json:"suggestions" bson:"suggestions"`
+	Reviews               []any      `json:"reviews" bson:"reviews"`
+	MergedAt              *time.Time `json:"mergedAt" bson:"mergedAt"`
+	IsMerged              bool       `json:"isMerged" bson:"isMerged"`
 }
 
 // File to store the last processed PlaceID
@@ -140,25 +140,27 @@ func processCSV(csvFile string, mongoURI string, dbName string, collectionName s
 		// }
 
 		place := Place{
-			PlaceID:                record[0],
-			Address:                record[2],
-			Version:                record[12],
-			IsAutoCompleteAddresss: strings.ToLower(record[3]),
-			Types:                  parseArrayFromColumn(record[1]),
-			PlusCode:               record[8],
-			City:                   record[5],
-			Division:               record[6],
-			Distric:                record[7],
-			PostalCode:             record[11],
-			Sublocality:            record[13],
-			LocalArea:              record[14],
+			PlaceID:               record[0],
+			Address:               record[2],
+			Version:               record[12],
+			IsAutoCompleteAddress: strings.ToLower(record[3]) == "true",
+			Types:                 parseArrayFromColumn(record[1]),
+			PlusCode:              record[8],
+			City:                  record[5],
+			Division:              record[6],
+			District:              record[7],
+			PostalCode:            record[11],
+			Sublocality:           record[13],
+			LocalArea:             record[14],
 			Location: &Location{
 				Type:        "Point",
 				Coordinates: [2]float64{parseFloat(record[10]), parseFloat(record[9])},
 			},
 
-			Suggestions: [0]any{},
-			Reviewers:   [0]any{},
+			Suggestions: []any{},
+			Reviews:     []any{},
+			MergedAt:    nil,
+			IsMerged:    false,
 		}
 
 		batch = append(batch, place)
